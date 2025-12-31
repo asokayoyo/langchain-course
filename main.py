@@ -11,11 +11,22 @@ from dotenv import load_dotenv
 from langchain.tools import tool
 from langchain_tavily import TavilySearch
 from tavily import TavilyClient
+from pydantic import BaseModel, Field
+from typing import List
 
 load_dotenv()
 
-# tavily = TavilySearch(max_results=1, topic="general")
+class Source(BaseModel):
+    """Schema for a source used by the agent."""
+    url: str = Field(..., description="The URL of the source")
+    
+class AgentResponse(BaseModel):    
+    """Schema for search results returned by the agent with answer and sources."""
+    answer: str = Field(..., description="The agent's answer to the query")
+    sources: List[Source] = Field(..., default_factory=list, description="List of sources used to generate the answer")
+
 tavily = TavilyClient()
+
 @tool
 def search(query: str) -> str:
     """
@@ -39,7 +50,7 @@ llm = ChatOpenAI(model="gpt-5-nano")
 tools = [TavilySearch(tool=search, max_results=3, topic="general")]
 
 # Create an agent using the search tool
-agent = create_agent(llm, tools)
+agent = create_agent(llm, tools, response_format=AgentResponse)
 
 # Define a function to run the agent with a query
 # def run_agent(query: str) -> str:
