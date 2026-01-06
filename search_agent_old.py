@@ -36,7 +36,9 @@ react_prompt_with_format_instruction = PromptTemplate(template=REACT_PROMPT_WITH
 
 agent = create_react_agent(llm, tools, prompt=react_prompt_with_format_instruction)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
-chain = agent_executor
+extract_output = RunnableLambda(lambda x: x['output'])
+parse_output = RunnableLambda(output_parser.parse)
+chain = agent_executor | extract_output | parse_output
 
 # Define a function to run the agent with a query
 # def run_agent(query: str) -> str:
