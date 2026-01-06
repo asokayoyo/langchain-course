@@ -15,19 +15,26 @@ from langchain_classic import hub
 from langchain_classic.agents.react.agent import create_react_agent
 from response_schema import AgentResponse
 from prompt import react_prompt
+from langchain_core.output_parsers import PydanticOutputParser
+from langchain_core.prompts import PromptTemplate
+from langchain_core.runnables import RunnableLambda
+from prompt import REACT_PROMPT_WITH_FORMAT_INSTRUCTIONS
 
 load_dotenv()
 
 
 # Create an instance of ChatOpenAI
 llm = ChatOpenAI(model="gpt-4")
-react_prompt = hub.pull("hwchase17/react") # connection issue
+# react_prompt = hub.pull("hwchase17/react") # connection issue
 tools = [TavilySearch()]
+output_parser = PydanticOutputParser(pydantic_object=AgentResponse)
+react_prompt_with_format_instruction = PromptTemplate(template=REACT_PROMPT_WITH_FORMAT_INSTRUCTIONS,
+    input_variables=["input", "tool_names", "agent_scratchpad"]).partial(format_instructions=output_parser.get_format_instructions())
 
 # Create an agent using the search tool
 # agent = create_agent(llm, tools, response_format=AgentResponse)
 
-agent = create_react_agent(llm, tools, prompt=react_prompt)
+agent = create_react_agent(llm, tools, prompt=react_prompt_with_format_instruction)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 chain = agent_executor
 
