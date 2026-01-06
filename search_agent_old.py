@@ -25,11 +25,12 @@ load_dotenv()
 
 # Create an instance of ChatOpenAI
 llm = ChatOpenAI(model="gpt-4")
+structured_llm = llm.with_structured_output(AgentResponse)
 # react_prompt = hub.pull("hwchase17/react") # connection issue
 tools = [TavilySearch()]
 output_parser = PydanticOutputParser(pydantic_object=AgentResponse)
 react_prompt_with_format_instruction = PromptTemplate(template=REACT_PROMPT_WITH_FORMAT_INSTRUCTIONS,
-    input_variables=["input", "tool_names", "agent_scratchpad"]).partial(format_instructions=output_parser.get_format_instructions())
+    input_variables=["input", "tool_names", "agent_scratchpad"]).partial(format_instructions="")
 
 # Create an agent using the search tool
 # agent = create_agent(llm, tools, response_format=AgentResponse)
@@ -37,8 +38,7 @@ react_prompt_with_format_instruction = PromptTemplate(template=REACT_PROMPT_WITH
 agent = create_react_agent(llm, tools, prompt=react_prompt_with_format_instruction)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 extract_output = RunnableLambda(lambda x: x['output'])
-parse_output = RunnableLambda(output_parser.parse)
-chain = agent_executor | extract_output | parse_output
+chain = agent_executor | extract_output | structured_llm
 
 # Define a function to run the agent with a query
 # def run_agent(query: str) -> str:
